@@ -142,6 +142,7 @@ pub struct State {
     pub margin: (i32, i32, i32, i32),
     amplification_sink: bool,
     amplification_source: bool,
+    layout_style: config::LayoutStyle,
 }
 
 fn close_timer(id: SurfaceId) -> (Task<Msg>, AbortHandle) {
@@ -192,8 +193,12 @@ impl State {
         let mut cmds = vec![];
 
         let is_display_number = matches!(params, Params::DisplayNumber(_));
+        let is_layout = matches!(params, Params::KeyboardLayout(_));
+        let layout_style = config::layout_style();
         let anchor = if is_display_number {
             Anchor::TOP
+        } else if is_layout {
+            Anchor::BOTTOM | Anchor::RIGHT
         } else {
             Anchor::BOTTOM
         };
@@ -208,6 +213,12 @@ impl State {
                 right: 0,
                 bottom: 0,
                 left: 0,
+            }
+        } else if is_layout {
+            IcedMargin {
+                right: layout_style.margin_right,
+                bottom: layout_style.margin_bottom,
+                ..margin
             }
         } else {
             margin
@@ -265,6 +276,8 @@ impl State {
         // Display numbers at top, other OSDs at bottom
         let margin = if is_display_number {
             (0, 0, 0, 0) // Top margin for display numbers
+        } else if is_layout {
+            (0, layout_style.margin_right, layout_style.margin_bottom, 0) // Bottom-right corner
         } else {
             (0, 0, 48, 0) // Bottom margin for other OSDs
         };
@@ -277,9 +290,14 @@ impl State {
                 margin,
                 amplification_sink,
                 amplification_source,
+                layout_style,
             },
             Task::batch(cmds),
         )
+    }
+
+    pub fn layout_style(&self) -> config::LayoutStyle {
+        self.layout_style
     }
 
     pub fn params(&self) -> &Params {
@@ -324,6 +342,10 @@ impl State {
             return self.view_display_number(display_number);
         }
 
+        let layout_colors = match &self.params {
+            Params::KeyboardLayout(name) => self.layout_style.colors(name),
+            _ => Default::default(),
+        };
         let icon = widget::icon::from_name(self.params.icon_name());
 
         // Use large radius on value-OSD to enforce pill-shape with "Round" system style
@@ -357,14 +379,10 @@ impl State {
         } else if let Params::KeyboardLayout(layout) = &self.params {
             radius = cosmic::theme::active().cosmic().radius_m();
 
-            iced::widget::row![
-                widget::container(icon.size(20)).center_x(Length::Fixed(32.0)),
-                widget::text::body(layout)
-            ]
-            .align_y(Alignment::Center)
-            .apply(widget::container)
-            .width(Length::Fixed(392.0))
-            .height(Length::Fixed(52.0))
+            widget::text::title4(layout)
+                .size(self.layout_style.font_size)
+                .apply(widget::container)
+                .padding([8, 16])
         } else {
             radius = cosmic::theme::active().cosmic().radius_m();
             const ICON_SIZE: u16 = 112;
@@ -375,10 +393,16 @@ impl State {
         .align_x(Alignment::Center)
         .align_y(Alignment::Center)
         .class(cosmic::theme::Container::custom(move |theme| {
+            let [text, bg] = [layout_colors.text, layout_colors.bg].map(|c| c.map(|[r, g, b, a]| iced::Color { r, g, b, a }));
             widget::container::Style {
-                text_color: Some(theme.cosmic().background(theme.transparent).on.into()),
+                text_color: Some(
+                    text.unwrap_or_else(|| theme.cosmic().background(theme.transparent).on.into()),
+                ),
                 background: Some(
-                    iced::Color::from(theme.cosmic().background(theme.transparent).base).into(),
+                    bg.unwrap_or_else(|| {
+                        iced::Color::from(theme.cosmic().background(theme.transparent).base)
+                    })
+                    .into(),
                 ),
                 border: Border {
                     radius: radius.into(),
