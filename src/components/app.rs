@@ -391,6 +391,11 @@ impl App {
             }
 
             state.margin = (top, right, bottom, left);
+            if matches!(state.params(), Params::KeyboardLayout(_)) {
+                // Exact user margins; panel overlap is already handled by the compositor.
+                let style = state.layout_style();
+                state.margin = (0, style.margin_right, style.margin_bottom, 0);
+            }
         }
         let mut cmds = Vec::with_capacity(2);
 
@@ -1226,9 +1231,13 @@ impl cosmic::Application for App {
                 let task = if self.keyboard_layout_group.is_some_and(|g| g != group)
                     && let Some(layout) = self.active_layouts.get(group)
                 {
-                    self.create_indicator(osd_indicator::Params::KeyboardLayout(
-                        layout.description.clone(),
-                    ))
+                    // "us" -> "EN", otherwise the xkb name ("ru" -> "RU")
+                    let name = match layout.layout.as_str() {
+                        "us" | "gb" => "EN".to_owned(),
+                        "ru" | "by" => "RU".to_owned(),
+                        l => l.to_uppercase(),
+                    };
+                    self.create_indicator(osd_indicator::Params::KeyboardLayout(name))
                 } else {
                     Task::none()
                 };
