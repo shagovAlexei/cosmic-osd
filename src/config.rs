@@ -77,9 +77,9 @@ pub fn layout_style() -> LayoutStyle {
             .and_then(|s| parse_hex(&s))
     };
     LayoutStyle {
-        font_size: int("font_size", 20).clamp(8, 200) as u16,
-        margin_right: int("margin_right", 48),
-        margin_bottom: int("margin_bottom", 48),
+        font_size: int("font_size", 15).clamp(8, 200) as u16,
+        margin_right: int("margin_right", 50),
+        margin_bottom: int("margin_bottom", 50),
         colors: LANGS.map(|l| LangColors {
             text: color(format!("text_color_{l}")),
             bg: color(format!("bg_color_{l}")),

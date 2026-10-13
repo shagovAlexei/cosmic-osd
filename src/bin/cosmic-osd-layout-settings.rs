@@ -12,9 +12,9 @@ mod config;
 
 /// (config key, label, default, min, max)
 const NUMS: [(&str, &str, i32, i32, i32); 3] = [
-    ("font_size", "Размер текста", 20, 8, 96),
-    ("margin_right", "Отступ справа", 48, 0, 400),
-    ("margin_bottom", "Отступ снизу", 48, 0, 400),
+    ("font_size", "Размер текста", 15, 8, 96),
+    ("margin_right", "Отступ справа", 50, 0, 400),
+    ("margin_bottom", "Отступ снизу", 50, 0, 400),
 ];
 
 #[derive(Clone, Debug)]
@@ -28,6 +28,8 @@ enum Msg {
     /// Open the palette for (language index, is_background)
     OpenPicker(usize, bool),
     Picker(ColorPickerUpdate),
+    Reset,
+    ResetColor(usize, bool),
 }
 
 struct App {
@@ -131,6 +133,19 @@ impl Application for App {
                 self.picker = new_picker(current).active(true);
                 self.editing = Some((i, bg));
             }
+            Msg::ResetColor(i, bg) => self.set_color(i, bg, String::new()),
+            Msg::Reset => {
+                for (i, (key, _, default, _, _)) in NUMS.iter().enumerate() {
+                    self.nums[i] = *default;
+                    self.num_texts[i] = default.to_string();
+                    self.save(key, *default);
+                }
+                for i in 0..config::LANGS.len() {
+                    self.set_color(i, false, String::new());
+                    self.set_color(i, true, String::new());
+                }
+                self.editing = None;
+            }
             Msg::Picker(update) => {
                 let applied = matches!(
                     update,
@@ -174,7 +189,8 @@ impl Application for App {
         let mut page = widget::column::with_capacity(5)
             .spacing(24)
             .padding(24)
-            .push(section);
+            .push(section)
+            .push(widget::button::standard("Сбросить по умолчанию").on_press(Msg::Reset));
 
         for (i, lang) in config::LANGS.iter().enumerate() {
             let (text, bg) = &self.colors[i];
@@ -207,8 +223,9 @@ impl Application for App {
                     .title(format!("Цвета: {} (#RRGGBB, пусто — тема)", lang.to_uppercase()))
                     .add(widget::settings::item(
                         "Текст",
-                        widget::row::with_capacity(2)
+                        widget::row::with_capacity(3)
                             .spacing(8)
+                            .align_y(cosmic::iced::Alignment::Center)
                             .push(
                                 widget::text_input("#ffffff", text)
                                     .on_input(move |v| Msg::TextColor(i, v))
@@ -217,12 +234,17 @@ impl Application for App {
                             .push(
                                 widget::button::standard("Палитра")
                                     .on_press(Msg::OpenPicker(i, false)),
+                            )
+                            .push(
+                                widget::button::icon(widget::icon::from_name("edit-clear-symbolic"))
+                                    .on_press(Msg::ResetColor(i, false)),
                             ),
                     ))
                     .add(widget::settings::item(
                         "Фон",
-                        widget::row::with_capacity(2)
+                        widget::row::with_capacity(3)
                             .spacing(8)
+                            .align_y(cosmic::iced::Alignment::Center)
                             .push(
                                 widget::text_input("#1a1a1a", bg)
                                     .on_input(move |v| Msg::BgColor(i, v))
@@ -231,6 +253,10 @@ impl Application for App {
                             .push(
                                 widget::button::standard("Палитра")
                                     .on_press(Msg::OpenPicker(i, true)),
+                            )
+                            .push(
+                                widget::button::icon(widget::icon::from_name("edit-clear-symbolic"))
+                                    .on_press(Msg::ResetColor(i, true)),
                             ),
                     ))
                     .add(widget::settings::item("Предпросмотр", preview)),
