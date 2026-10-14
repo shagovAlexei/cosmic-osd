@@ -1,10 +1,12 @@
-# cosmic-osd (форк с индикатором раскладки RU/EN)
+**English** | [Русский](README_ru.md)
 
-Форк [pop-os/cosmic-osd](https://github.com/pop-os/cosmic-osd) для Pop!_OS 24.04 / COSMIC.
-Вместо большого окна «Russian (Belarus)» при смене раскладки показывается компактный бейдж **RU** / **EN**
-в правом нижнем углу. Размер, отступы и цвета (отдельно для RU и EN) настраиваются в окне настроек.
+# cosmic-osd (fork with a compact RU/EN layout indicator)
 
-## Установка
+Fork of [pop-os/cosmic-osd](https://github.com/pop-os/cosmic-osd) for Pop!_OS 24.04 / COSMIC.
+Instead of the large "Russian (Belarus)" popup on keyboard layout change, it shows a compact **RU** / **EN** badge
+in the bottom-right corner. Size, margins and colors (separately for RU and EN) are configurable in a settings window.
+
+## Install
 
 ```sh
 git clone git@github.com:shagovAlexei/cosmic-osd.git
@@ -12,49 +14,49 @@ cd cosmic-osd
 cargo build --release
 ```
 
-Нужны Rust (версия из `rust-toolchain.toml`) и dev-пакеты COSMIC/Wayland (как для остальных компонентов COSMIC).
+Requires Rust (version from `rust-toolchain.toml`) and the usual COSMIC/Wayland dev packages.
 
-Ставим оба бинаря. Пакетный `/usr/bin/cosmic-osd` запущен, поэтому поверх него `cp` не работает («Text file busy») — копируем во временный файл и переименовываем:
+Install both binaries. The packaged `/usr/bin/cosmic-osd` is running, so a plain `cp` over it fails ("Text file busy") — copy to a temp file and rename:
 
 ```sh
 sudo cp target/release/cosmic-osd /usr/bin/cosmic-osd.new && sudo mv /usr/bin/cosmic-osd.new /usr/bin/cosmic-osd
 install -Dm0755 target/release/cosmic-osd-layout-settings ~/.local/bin/cosmic-osd-layout-settings
-pkill cosmic-osd   # сессия перезапустит OSD; если нет — запусти /usr/bin/cosmic-osd вручную
+pkill cosmic-osd   # the session restarts the OSD; if not, run /usr/bin/cosmic-osd manually
 ```
 
-`just install` ставит только `cosmic-osd`, окно настроек — вручную, как выше.
+`just install` installs only `cosmic-osd`; install the settings window manually as above.
 
-## Настройки
+## Settings
 
 ```sh
 cosmic-osd-layout-settings
 ```
 
-- размер текста (по умолчанию 15), отступы справа и снизу (по умолчанию 50) — ползунок или число;
-- цвет текста и фона для RU и EN: hex `#RRGGBB` или палитра; пусто — цвет темы;
-- «Сбросить по умолчанию» — всё сразу, иконка-ластик у цвета — только он.
+- text size (default 15), right and bottom margins (default 50) — slider or typed number;
+- text and background color for RU and EN: hex `#RRGGBB` or the palette; empty = theme color;
+- "Сбросить по умолчанию" resets everything; the eraser icon next to a color resets only that color.
 
-Значения хранятся в `~/.config/cosmic/com.system76.CosmicOsdLayout/v1/` и подхватываются при следующем показе индикатора.
+Values are stored in `~/.config/cosmic/com.system76.CosmicOsdLayout/v1/` and picked up the next time the indicator is shown.
 
-## Обновление
+## Update
 
 ```sh
-git pull mine master        # или git pull в своём клоне форка
+git pull mine master        # or plain git pull in your fork's clone
 cargo build --release
-# затем те же команды установки, что выше
+# then repeat the install commands above
 ```
 
-Обновление пакета `cosmic-osd` через `apt upgrade` перезаписывает бинарь оригиналом — тогда повтори установку.
-Чтобы этого не было: `sudo apt-mark hold cosmic-osd` (снять: `apt-mark unhold cosmic-osd`).
+`apt upgrade` of the `cosmic-osd` package overwrites the binary with the original — repeat the install then.
+To prevent that: `sudo apt-mark hold cosmic-osd` (undo: `apt-mark unhold cosmic-osd`).
 
-## Откат на оригинал
+## Roll back to the original
 
 ```sh
 sudo apt install --reinstall cosmic-osd && pkill cosmic-osd
 ```
 
-Настройки в `~/.config` можно удалить: `rm -r ~/.config/cosmic/com.system76.CosmicOsdLayout`.
+Settings can be removed with `rm -r ~/.config/cosmic/com.system76.CosmicOsdLayout`.
 
-## Остальное
+## Everything else
 
-Все остальные индикаторы и диалоги (громкость, яркость, polkit и т.д.) — без изменений, как в оригинале. Для разработки см. `CLAUDE.md`, ручной чек-лист — `TESTING.md`. Лицензия — GPL-3.0 (`LICENSE`).
+All other indicators and dialogs (volume, brightness, polkit, etc.) are unchanged from upstream. For development see `CLAUDE.md`; the manual checklist is `TESTING.md`. License: GPL-3.0 (`LICENSE`).
